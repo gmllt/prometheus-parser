@@ -1,7 +1,6 @@
 {
   "name": "gmllt/prometheus-parser",
   "description": "Simple prometheus parser",
-  "version": "0.0.1-beta1",
   "type": "library",
   "license": "proprietary",
   "authors": [
