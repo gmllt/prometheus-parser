@@ -1,0 +1,22 @@
+{
+  "name": "gmllt/prometheus-parser",
+  "description": "Simple prometheus parser",
+  "version": "0.0.1-beta1",
+  "type": "library",
+  "license": "proprietary",
+  "authors": [
+    {
+      "name": "gmiraillet",
+      "email": "g.miraillet@gmail.com"
+    }
+  ],
+  "require": {
+    "php": ">=7.4",
+    "ext-curl": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "Gmllt\\PromParser\\": "src/"
+    }
+  }
+}
