@@ -32,6 +32,7 @@ namespace Gmllt\PromParser;
 use Exception;
 use Gmllt\PromParser\Builder\FamilyBuilder;
 use Gmllt\PromParser\Builder\SampleBuilder;
+use Prometheus\MetricFamilySamples;
 
 /**
  * Class Parser
@@ -50,7 +51,7 @@ class Parser
      *
      * @param string $parsed String to parse
      *
-     * @return Family[]
+     * @return MetricFamilySamples[]
      * @throws Exception
      */
     public static function parse(string $parsed): array
@@ -63,6 +64,15 @@ class Parser
             $extractedSamples = self::extractMetricSamples($extractedFamily);
             $availableLabels = self::extractAvailableLabels($extractedSamples);
             $name = self::extractNameFromSamples($extractedSamples);
+            if ($type === Family::TYPE_HISTOGRAM) {
+                $name = preg_replace('~_(bucket|count|sum)$~', '', $name);
+                // remove 'le' key from histogram
+                foreach ($availableLabels as $key => $value) {
+                    if ($value == 'le') {
+                        unset($availableLabels[$key]);
+                    }
+                }
+            }
             if (null !== $help && null !== $type && null !== $name) {
                 $currentFamily = FamilyBuilder::buildFromArray(
                     [
@@ -74,15 +84,16 @@ class Parser
                 );
                 // create samples
                 $currentSamples = [];
-                foreach ($extractedSamples as $extractedSample) {
+                foreach ($extractedSamples as $key => $extractedSample) {
                     $labels = self::extractLabels($extractedSample);
+                    $currentName = self::extractNameFromSamples([$extractedSample]);
                     $value = self::extractValue($extractedSample);
                     if (null === $value) {
                         continue;
                     }
                     $currentSamples[] = SampleBuilder::buildFromArray(
                         [
-                            SampleBuilder::FIELD_NAME => $name,
+                            SampleBuilder::FIELD_NAME => $currentName,
                             SampleBuilder::FIELD_LABELS => $labels,
                             SampleBuilder::FIELD_VALUE => $value,
                         ]
@@ -92,6 +103,14 @@ class Parser
                 $families[] = $currentFamily;
             }
         }
+        array_walk(
+            $families,
+            function (&$family) {
+                if ($family instanceof Family) {
+                    $family = $family->toPrometheusMetricFamilySamples();
+                }
+            }
+        );
         return $families;
     }
 
@@ -100,7 +119,7 @@ class Parser
      *
      * @param string $file File to parse
      *
-     * @return Family[]
+     * @return MetricFamilySamples[]
      * @throws Exception
      */
     public static function parseFile(string $file): array
@@ -114,7 +133,7 @@ class Parser
      *
      * @param string $url Url to parse
      *
-     * @return Family[]
+     * @return MetricFamilySamples[]
      * @throws Exception
      */
     public static function parseUrl(string $url): array
@@ -247,7 +266,7 @@ class Parser
                 continue;
             }
             $labelValue = $labelValues[$key];
-            if (empty($labelName) || empty($labelValue)) {
+            if (empty($labelName)) {
                 continue;
             }
             $labels[$labelName] = $labelValue;

@@ -30,6 +30,9 @@
 namespace Gmllt\PromParser\Builder;
 
 use Exception;
+use Gmllt\PromParser\Builder\Family\CounterBuilder;
+use Gmllt\PromParser\Builder\Family\GaugeBuilder;
+use Gmllt\PromParser\Builder\Family\HistogramBuilder;
 use Gmllt\PromParser\Family;
 
 /**
@@ -70,19 +73,16 @@ class FamilyBuilder
      */
     public const FIELD_LABELS = 'labels';
 
-    /**
-     * Family
-     *
-     * @var Family
-     */
-    protected Family $family;
+    protected string $name = '';
+    protected string $type = '';
+    protected string $help = '';
+    protected array $labels = [];
 
     /**
      * FamilyBuilder constructor.
      */
     public function __construct()
     {
-        $this->family = new Family();
     }
 
     /**
@@ -94,7 +94,7 @@ class FamilyBuilder
      */
     public function withName(string $name): self
     {
-        $this->family->setName($name);
+        $this->name = $name;
         return $this;
     }
 
@@ -108,7 +108,7 @@ class FamilyBuilder
      */
     public function withType(string $type): self
     {
-        $this->family->setType($type);
+        $this->type = $type;
         return $this;
     }
 
@@ -121,7 +121,7 @@ class FamilyBuilder
      */
     public function withHelp(string $help): self
     {
-        $this->family->setHelp($help);
+        $this->help = $help;
         return $this;
     }
 
@@ -134,7 +134,7 @@ class FamilyBuilder
      */
     public function withLabels(array $labels): self
     {
-        $this->family->setLabels($labels);
+        $this->labels = $labels;
         return $this;
     }
 
@@ -145,7 +145,12 @@ class FamilyBuilder
      */
     public function build(): Family
     {
-        return $this->family;
+        return new Family(
+            $this->name,
+            $this->type,
+            $this->help,
+            $this->labels
+        );
     }
 
     /**

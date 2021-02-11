@@ -30,6 +30,7 @@
 namespace Gmllt\PromParser;
 
 use Exception;
+use Prometheus\MetricFamilySamples;
 use ReflectionClass;
 
 /**
@@ -43,6 +44,41 @@ use ReflectionClass;
  */
 class Family
 {
+
+    /**
+     * Prometheus metric family samples name field
+     *
+     * @var string
+     */
+    const PROMETHEUS_METRIC_FAMILY_SAMPLES_FIELD_NAME = 'name';
+
+    /**
+     * Prometheus metric family samples type field
+     *
+     * @var string
+     */
+    const PROMETHEUS_METRIC_FAMILY_SAMPLES_FIELD_TYPE = 'type';
+
+    /**
+     * Prometheus metric family samples help field
+     *
+     * @var string
+     */
+    const PROMETHEUS_METRIC_FAMILY_SAMPLES_FIELD_HELP = 'help';
+
+    /**
+     * Prometheus metric family samples label Names field
+     *
+     * @var string
+     */
+    const PROMETHEUS_METRIC_FAMILY_SAMPLES_FIELD_LABEL_NAMES = 'labelNames';
+
+    /**
+     * Prometheus metric family samples name field
+     *
+     * @var string
+     */
+    const PROMETHEUS_METRIC_FAMILY_SAMPLES_FIELD_SAMPLES = 'samples';
     /**
      * Type 'counter'
      *
@@ -63,13 +99,6 @@ class Family
      * @var string
      */
     const TYPE_HISTOGRAM = 'histogram';
-
-    /**
-     * Type 'summary'
-     *
-     * @var string
-     */
-    const _TYPE_SUMMARY = 'summary';
 
     /**
      * Available types
@@ -107,7 +136,7 @@ class Family
     protected string $help = '';
 
     /**
-     * Sample
+     * Family
      *
      * @var Sample[]
      */
@@ -303,5 +332,46 @@ class Family
             $result .= $sample->__toString();
         }
         return $result;
+    }
+
+    /**
+     * To prometheus family definition
+     *
+     * @return array
+     */
+    public function toPrometheusMetricFamilySamplesDefinition(): array
+    {
+        $prometheusSamples = $this->getSamples();
+        array_walk(
+            $prometheusSamples,
+            function (Sample &$item) {
+                $item = $item->toPrometheusSampleDefinition();
+                // Remove duplicated keys
+                foreach ($item[Sample::PROMETHEUS_FIELD_LABEL_NAMES] as $key => $value) {
+                    if (in_array($value, $this->labels)) {
+                        unset($item[Sample::PROMETHEUS_FIELD_LABEL_NAMES][$key]);
+                    }
+                }
+            }
+        );
+
+        return
+            [
+                self::PROMETHEUS_METRIC_FAMILY_SAMPLES_FIELD_NAME => $this->getName(),
+                self::PROMETHEUS_METRIC_FAMILY_SAMPLES_FIELD_TYPE => $this->getType(),
+                self::PROMETHEUS_METRIC_FAMILY_SAMPLES_FIELD_HELP => $this->getHelp(),
+                self::PROMETHEUS_METRIC_FAMILY_SAMPLES_FIELD_LABEL_NAMES => $this->getLabels(),
+                self::PROMETHEUS_METRIC_FAMILY_SAMPLES_FIELD_SAMPLES => $prometheusSamples,
+            ];
+    }
+
+    /**
+     * To prometheus MetricFamilySamples
+     *
+     * @return MetricFamilySamples
+     */
+    public function toPrometheusMetricFamilySamples(): MetricFamilySamples
+    {
+        return new MetricFamilySamples($this->toPrometheusMetricFamilySamplesDefinition());
     }
 }

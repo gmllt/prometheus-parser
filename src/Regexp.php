@@ -128,7 +128,7 @@ abstract class Regexp
      */
     public static function help(): string
     {
-        return '#[\s]HELP[\s]+(?<metric_help>[^\n]*)';
+        return '#[\s]HELP[\s]+' . self::metricName() . '[\s]+(?<metric_help>[^\n]*)';
     }
 
     /**

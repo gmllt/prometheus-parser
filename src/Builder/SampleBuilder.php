@@ -64,7 +64,7 @@ class SampleBuilder
     const FIELD_VALUE = 'value';
 
     /**
-     * Sample
+     * Family
      *
      * @var Sample
      */

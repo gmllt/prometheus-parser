@@ -29,8 +29,13 @@
 
 namespace Gmllt\PromParser;
 
+use Gmllt\PromParser\Sample\Counter;
+use Gmllt\PromParser\Sample\Gauge;
+use Gmllt\PromParser\Sample\Histogram;
+use Gmllt\PromParser\Sample\Summary;
+
 /**
- * Class Sample
+ * Class Family
  *
  * @category Library
  * @package  Gmllt\PromParser
@@ -40,6 +45,35 @@ namespace Gmllt\PromParser;
  */
 class Sample
 {
+
+    /**
+     * Prometheus sample name field
+     *
+     * @var string
+     */
+    const PROMETHEUS_FIELD_NAME = 'name';
+
+    /**
+     * Prometheus sample labelNames field
+     *
+     * @var string
+     */
+    const PROMETHEUS_FIELD_LABEL_NAMES = 'labelNames';
+
+    /**
+     * Prometheus sample labelValues field
+     *
+     * @var string
+     */
+    const PROMETHEUS_FIELD_LABEL_VALUES = 'labelValues';
+
+    /**
+     * Prometheus sample value field
+     *
+     * @var string
+     */
+    const PROMETHEUS_FIELD_VALUE = 'value';
+
     /**
      * Name
      *
@@ -62,7 +96,7 @@ class Sample
     protected float $value = 0.0;
 
     /**
-     * Sample constructor.
+     * Family constructor.
      *
      * @param string $name   Name
      * @param array  $labels Label
@@ -167,5 +201,20 @@ class Sample
         $result .= ' ' . $this->getValue();
         $result .= "\n";
         return $result;
+    }
+
+    /**
+     * To prometheus sample definition
+     *
+     * @return array
+     */
+    public function toPrometheusSampleDefinition(): array
+    {
+        return [
+            self::PROMETHEUS_FIELD_NAME => $this->getName(),
+            self::PROMETHEUS_FIELD_LABEL_NAMES => array_keys($this->getLabels()),
+            self::PROMETHEUS_FIELD_LABEL_VALUES => array_values($this->getLabels()),
+            self::PROMETHEUS_FIELD_VALUE => $this->getValue(),
+        ];
     }
 }

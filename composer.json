@@ -11,7 +11,8 @@
   ],
   "require": {
     "php": ">=7.4",
-    "ext-curl": "*"
+    "ext-curl": "*",
+    "promphp/prometheus_client_php": "^2.2"
   },
   "autoload": {
     "psr-4": {
