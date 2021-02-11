@@ -49,30 +49,46 @@ class Parser
     /**
      * Parse string
      *
-     * @param string $parsed String to parse
+     * @param string $parsed           String to parse
+     * @param string $prefix           Prefix to apply
+     * @param array  $addedLabelNames  Added label names
+     * @param array  $addedLabelValues Added label values
      *
      * @return MetricFamilySamples[]
      * @throws Exception
      */
-    public static function parse(string $parsed): array
-    {
+    public static function parse(
+        string $parsed,
+        string $prefix = '',
+        array $addedLabelNames = [],
+        array $addedLabelValues = []
+    ): array {
+        if (count($addedLabelNames) !== count($addedLabelValues)) {
+            throw new Exception("Params \$addedLabelNames and \$addedLabelValues should be the same size.");
+        }
         $families = [];
         $extractedFamilies = self::extractFamilies($parsed);
         foreach ($extractedFamilies as $extractedFamily) {
             $help = self::extractHelp($extractedFamily);
             $type = self::extractType($extractedFamily);
             $extractedSamples = self::extractMetricSamples($extractedFamily);
-            $availableLabels = self::extractAvailableLabels($extractedSamples);
             $name = self::extractNameFromSamples($extractedSamples);
+            $availableLabels = self::extractAvailableLabels($extractedSamples);
             if ($type === Family::TYPE_HISTOGRAM) {
                 $name = preg_replace('~_(bucket|count|sum)$~', '', $name);
-                // remove 'le' key from histogram
+                /*// remove 'le' key from histogram
                 foreach ($availableLabels as $key => $value) {
                     if ($value == 'le') {
                         unset($availableLabels[$key]);
                     }
-                }
+                }*/
             }
+            /*$availableLabels = array_merge($availableLabels, $addedLabelNames);*/
+
+            if (!empty($prefix)) {
+                $name = $prefix . '_' . $name;
+            }
+
             if (null !== $help && null !== $type && null !== $name) {
                 $currentFamily = FamilyBuilder::buildFromArray(
                     [
@@ -86,7 +102,21 @@ class Parser
                 $currentSamples = [];
                 foreach ($extractedSamples as $key => $extractedSample) {
                     $labels = self::extractLabels($extractedSample);
+                    // split family labels and sample specific labels
+                    $familyLabels = [];
+                    $specificLabels = [];
+                    foreach ($labels as $labelKey => $labelValue) {
+                        if (in_array($labelKey, $currentFamily->getLabels())) {
+                            $familyLabels[$labelKey] = $labelValue;
+                        } else {
+                            $specificLabels[$labelKey] = $labelValue;
+                        }
+                    }
+                    $labels = array_merge($familyLabels, array_combine($addedLabelNames, $addedLabelValues), $specificLabels);
                     $currentName = self::extractNameFromSamples([$extractedSample]);
+                    if (!empty($prefix)) {
+                        $currentName = $prefix . '_' . $currentName;
+                    }
                     $value = self::extractValue($extractedSample);
                     if (null === $value) {
                         continue;
@@ -117,34 +147,48 @@ class Parser
     /**
      * Parse file
      *
-     * @param string $file File to parse
+     * @param string $file             File to parse
+     * @param string $prefix           Prefix to apply
+     * @param array  $addedLabelNames  Added label names
+     * @param array  $addedLabelValues Added label values
      *
      * @return MetricFamilySamples[]
      * @throws Exception
      */
-    public static function parseFile(string $file): array
-    {
+    public static function parseFile(
+        string $file,
+        string $prefix = '',
+        array $addedLabelNames = [],
+        array $addedLabelValues = []
+    ): array {
         $string = file_get_contents($file);
-        return self::parse($string);
+        return self::parse($string, $prefix);
     }
 
     /**
      * Parse url
      *
-     * @param string $url Url to parse
+     * @param string $url              Url to parse
+     * @param string $prefix           Prefix to apply
+     * @param array  $addedLabelNames  Added label names
+     * @param array  $addedLabelValues Added label values
      *
      * @return MetricFamilySamples[]
      * @throws Exception
      */
-    public static function parseUrl(string $url): array
-    {
+    public static function parseUrl(
+        string $url,
+        string $prefix = '',
+        array $addedLabelNames = [],
+        array $addedLabelValues = []
+    ): array {
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
         $string = curl_exec($ch);
         curl_close($ch);
-        return self::parse($string);
+        return self::parse($string, $prefix);
     }
 
     /**
@@ -223,7 +267,9 @@ class Parser
         foreach ($samples as $sample) {
             $matches = [];
             preg_match_all('~' . Regexp::labelDefinition() . '~', $sample, $matches);
-            $labels = array_unique(array_merge($labels, $matches['label_name']));
+            if (count($matches['label_name']) < count($labels) || count($labels) == 0) {
+                $labels = $matches['label_name'];
+            }
         }
         return $labels;
     }
