@@ -49,10 +49,10 @@ class Parser
     /**
      * Parse string
      *
-     * @param string $parsed String to parse
-     * @param string $prefix Prefix to apply
-     * @param array $addedLabelNames Added label names
-     * @param array $addedLabelValues Added label values
+     * @param string $parsed           String to parse
+     * @param string $prefix           Prefix to apply
+     * @param array  $addedLabelNames  Added label names
+     * @param array  $addedLabelValues Added label values
      *
      * @return MetricFamilySamples[]
      * @throws Exception
@@ -62,8 +62,7 @@ class Parser
         string $prefix = '',
         array $addedLabelNames = [],
         array $addedLabelValues = []
-    ): array
-    {
+    ): array {
         if (count($addedLabelNames) !== count($addedLabelValues)) {
             throw new Exception("Params \$addedLabelNames and \$addedLabelValues should be the same size.");
         }
@@ -113,7 +112,11 @@ class Parser
                             $specificLabels[$labelKey] = $labelValue;
                         }
                     }
-                    $labels = array_merge($familyLabels, array_combine($addedLabelNames, $addedLabelValues), $specificLabels);
+                    $labels = array_merge(
+                        $familyLabels,
+                        array_combine($addedLabelNames, $addedLabelValues),
+                        $specificLabels
+                    );
                     $currentName = self::extractNameFromSamples([$extractedSample]);
                     if (!empty($prefix)) {
                         $currentName = $prefix . '_' . $currentName;
@@ -148,10 +151,10 @@ class Parser
     /**
      * Parse file
      *
-     * @param string $file File to parse
-     * @param string $prefix Prefix to apply
-     * @param array $addedLabelNames Added label names
-     * @param array $addedLabelValues Added label values
+     * @param string $file             File to parse
+     * @param string $prefix           Prefix to apply
+     * @param array  $addedLabelNames  Added label names
+     * @param array  $addedLabelValues Added label values
      *
      * @return MetricFamilySamples[]
      * @throws Exception
@@ -161,19 +164,18 @@ class Parser
         string $prefix = '',
         array $addedLabelNames = [],
         array $addedLabelValues = []
-    ): array
-    {
+    ): array {
         $string = file_get_contents($file);
-        return self::parse($string, $prefix);
+        return self::parse($string, $prefix, $addedLabelNames, $addedLabelValues);
     }
 
     /**
      * Parse url
      *
-     * @param string $url Url to parse
-     * @param string $prefix Prefix to apply
-     * @param array $addedLabelNames Added label names
-     * @param array $addedLabelValues Added label values
+     * @param string $url              Url to parse
+     * @param string $prefix           Prefix to apply
+     * @param array  $addedLabelNames  Added label names
+     * @param array  $addedLabelValues Added label values
      *
      * @return MetricFamilySamples[]
      * @throws Exception
@@ -183,15 +185,14 @@ class Parser
         string $prefix = '',
         array $addedLabelNames = [],
         array $addedLabelValues = []
-    ): array
-    {
+    ): array {
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
         $string = curl_exec($ch);
         curl_close($ch);
-        return self::parse($string, $prefix);
+        return self::parse($string, $prefix, $addedLabelNames, $addedLabelValues);
     }
 
     /**
@@ -252,15 +253,15 @@ class Parser
 
     /**
      * Parse type string
-     * 
+     *
      * @param string $parsed String to parse
      *
      * @return string|null
      */
-    protected static function extractTypeString(string $parsed) : ?string
+    protected static function extractTypeString(string $parsed): ?string
     {
         $matches = [];
-        preg_match('~'.Regexp::type().'~', $parsed, $matches);
+        preg_match('~' . Regexp::type() . '~', $parsed, $matches);
         return $matches[0] ?? null;
     }
 

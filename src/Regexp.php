@@ -139,9 +139,9 @@ abstract class Regexp
     public static function type(): string
     {
         return '#[\s]TYPE[\s]+(' . self::metricName() . '[\s]+)?(?<metric_type>(' . implode(
-            '|',
-            Family::getAvailableTypes()
-        ) . '))';
+                '|',
+                Family::getAvailableTypes()
+            ) . '))';
     }
 
     /**
@@ -151,6 +151,10 @@ abstract class Regexp
      */
     public static function metricDefinition(): string
     {
-        return preg_replace('~\?<[a-z_]+>~', '', '('.self::help() . '\n)?' . self::type() . '\n' . self::metricGroup());
+        return preg_replace(
+            '~\?<[a-z_]+>~',
+            '',
+            '(' . self::help() . '\n)?' . self::type() . '\n' . self::metricGroup()
+        );
     }
 }
